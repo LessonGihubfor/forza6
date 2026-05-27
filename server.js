@@ -76,7 +76,12 @@ app.get('/api/photos', async (req, res) => {
       created_at: r.created_at,
     }));
 
-    res.json({ count: photos.length, photos });
+    res.json({
+      count: photos.length,
+      total: result.total_count || photos.length,
+      next_cursor: result.next_cursor || null,
+      photos,
+    });
   } catch (err) {
     console.error('Error fetching photos from Cloudinary:', err);
     res.status(500).json({
