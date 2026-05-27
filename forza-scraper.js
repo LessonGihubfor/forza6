@@ -29,7 +29,7 @@
     const parts = src.split("/");
     // Find the "galleryv2images" segment to anchor our parsing
     const gIdx = parts.indexOf("galleryv2images");
-    if (gIdx === -1 || gIdx + 3 > parts.length - 1) return;
+    if (gIdx === -1 || gIdx + 3 >= parts.length) return;
     const uuid = parts[gIdx + 2]; // photoUUID
     const size = parts[gIdx + 3]; // size (2,3,4)
     if (!uuid || uuid.length < 8) return;
@@ -395,7 +395,7 @@
         let batchSkipped = 0;
         (data.results || []).forEach((r) => {
           if (r.status === "uploaded") {
-            console.log(`    UPLOADED: ${r.cloudinary_url}`);
+            console.log(`    UPLOADED: ${r.local_url || r.cloudinary_url || 'saved'}`);
           } else if (r.status === "skipped") {
             batchSkipped++;
           } else {
