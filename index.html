@@ -224,23 +224,53 @@
         }
       }
 
-      // ---- SAVE ALL ----
+      // ---- SAVE ALL TO CAMERA ROLL ----
       async function saveAllPhotos() {
         const btn = els.saveAll;
         const orig = btn.innerHTML;
         btn.disabled = true;
+
+        // Fetch all photos as File objects
+        const files = [];
         for (let i = 0; i < allPhotos.length; i++) {
-          btn.innerHTML = `Saving ${i+1}/${allPhotos.length}…`;
+          btn.innerHTML = `Loading ${i+1}/${allPhotos.length}…`;
           try {
             const r = await fetch(allPhotos[i].full || allPhotos[i].url);
             const blob = await r.blob();
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `forza-${i+1}.jpg`;
-            document.body.appendChild(a); a.click();
-            document.body.removeChild(a); URL.revokeObjectURL(a.href);
-          } catch(e) { console.error("Failed to save photo",i+1,e); }
-          await new Promise(r => setTimeout(r, 400));
+            files.push(new File([blob], `forza-${i+1}.jpg`, { type: "image/jpeg" }));
+          } catch(e) { console.error("Failed to fetch photo", i+1, e); }
+        }
+
+        if (!files.length) {
+          btn.innerHTML = "No photos loaded";
+          setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },2000);
+          return;
+        }
+
+        // iOS/Android: share ALL files at once → "Save X Images" → Camera Roll
+        if (navigator.canShare && navigator.canShare({ files })) {
+          btn.innerHTML = `Saving ${files.length} photos…`;
+          try {
+            await navigator.share({ files, title: "Forza Screenshots" });
+            btn.innerHTML = "All Saved!";
+            setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },3000);
+            return;
+          } catch(e) {
+            if (e.name === "AbortError") {
+              btn.innerHTML=orig; btn.disabled=false;
+              return;
+            }
+          }
+        }
+
+        // Desktop fallback: download individually
+        for (const f of files) {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(f);
+          a.download = f.name;
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a); URL.revokeObjectURL(a.href);
+          await new Promise(r => setTimeout(r, 300));
         }
         btn.innerHTML = "All Saved!";
         setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },3000);
