@@ -125,10 +125,38 @@
     }
   }
 
-  // --- Step 4: If still only page 1, try intercepting network + clicking ---
+  // --- Step 4: Check for Nuxt/Vue embedded data ---
   if (photoUrls.length <= 20) {
-    console.log("  Trying click + network intercept approach...");
+    console.log("  Checking for embedded app data...");
+    // Nuxt payload
+    try {
+      const nuxt = window.__NUXT__ || window.__NUXT_DATA__;
+      if (nuxt) {
+        const nuxtStr = JSON.stringify(nuxt);
+        const nuxtUrls = nuxtStr.match(/t10pgalleryv2[^"'\s<>)]*galleryv2images\/[^"'\s<>)]+/g) || [];
+        nuxtUrls.forEach(u => addUrl("https://" + u.replace(/^https?:\/\//, "")));
+        console.log(`    NUXT data: +${nuxtUrls.length} URLs found`);
+      }
+    } catch(e) {}
+
+    // Scan ALL script tags for embedded JSON data
+    document.querySelectorAll("script").forEach(s => {
+      const txt = s.textContent || s.innerText || "";
+      if (txt.includes("galleryv2images")) {
+        const urls = txt.match(/t10pgalleryv2[^"'\s<>)]*galleryv2images\/[^"'\s<>)]+/g) || [];
+        urls.forEach(u => addUrl("https://" + u.replace(/^https?:\/\//, "")));
+        console.log(`    Script tag: +${urls.length} URLs found`);
+      }
+    });
+    console.log(`    After data scan: ${photoUrls.length} total`);
+  }
+
+  // --- Step 5: Intercept ALL network (fetch + XHR) + click pages ---
+  if (photoUrls.length <= 20) {
+    console.log("  Trying click + network intercept (fetch + XHR)...");
     const intercepted = [];
+
+    // Patch fetch
     const _origFetch = window.fetch;
     window.fetch = async function(...args) {
       const resp = await _origFetch.apply(this, args);
@@ -136,30 +164,60 @@
         const clone = resp.clone();
         const text = await clone.text();
         const urls = text.match(/t10pgalleryv2[^"'\s<>)]*galleryv2images\/[^"'\s<>)]+/g) || [];
+        if (urls.length) console.log(`    [fetch intercepted] ${urls.length} gallery URLs`);
         urls.forEach(u => intercepted.push("https://" + u.replace(/^https?:\/\//, "")));
       } catch(e) {}
       return resp;
     };
 
-    // Click each page number
+    // Patch XMLHttpRequest
+    const _origXHROpen = XMLHttpRequest.prototype.open;
+    const _origXHRSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+      this._url = url;
+      return _origXHROpen.call(this, method, url, ...rest);
+    };
+    XMLHttpRequest.prototype.send = function(...args) {
+      this.addEventListener("load", function() {
+        try {
+          const text = this.responseText || "";
+          const urls = text.match(/t10pgalleryv2[^"'\s<>)]*galleryv2images\/[^"'\s<>)]+/g) || [];
+          if (urls.length) console.log(`    [XHR intercepted] ${urls.length} gallery URLs from ${this._url}`);
+          urls.forEach(u => intercepted.push("https://" + u.replace(/^https?:\/\//, "")));
+        } catch(e) {}
+      });
+      return _origXHRSend.apply(this, args);
+    };
+
+    // Click each page number — search ALL element types
     for (let p = 2; p <= 10; p++) {
-      const el = [...document.querySelectorAll("a")].find(a => a.textContent.trim() === String(p));
-      if (!el) break;
-      console.log(`  Clicking page ${p}...`);
+      const el = [...document.querySelectorAll("a, button, span, li, div")].find(e => {
+        const txt = e.textContent.trim();
+        return txt === String(p) && e.offsetParent !== null && txt.length <= 2;
+      });
+      if (!el) {
+        console.log(`  No page ${p} element found. Stopping clicks.`);
+        break;
+      }
+      console.log(`  Clicking page ${p} (${el.tagName}.${el.className})...`);
       el.click();
-      await new Promise(r => setTimeout(r, 4000));
+      await new Promise(r => setTimeout(r, 5000));
 
       // Scan DOM after click
       scanDOM(document);
 
-      // Also add any intercepted URLs
+      // Process intercepted URLs
       intercepted.forEach(u => addUrl(u));
+      const added = intercepted.length;
       intercepted.length = 0;
 
-      console.log(`    ${photoUrls.length} total photos`);
+      console.log(`    Intercepted: ${added} URLs. Total: ${photoUrls.length} photos`);
     }
 
-    window.fetch = _origFetch; // restore
+    // Restore originals
+    window.fetch = _origFetch;
+    XMLHttpRequest.prototype.open = _origXHROpen;
+    XMLHttpRequest.prototype.send = _origXHRSend;
   }
 
   if (photoUrls.length === 0) {
