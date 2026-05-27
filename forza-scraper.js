@@ -16,8 +16,21 @@
 (async function forzaToCloudinary() {
   const API = "https://forza-gallery-api.onrender.com";
 
-  console.log("%c FORZA GALLERY SYNC v2 ", "background:#3b82f6;color:#fff;font-size:16px;padding:4px 12px;border-radius:6px;");
-  console.log("Scanning for Forza photos on this page...\n");
+  console.log("%c FORZA GALLERY SYNC v3 ", "background:#3b82f6;color:#fff;font-size:16px;padding:4px 12px;border-radius:6px;");
+
+  // --- Auto-scroll to load ALL lazy-loaded photos ---
+  console.log("Auto-scrolling to load all photos...");
+  let lastHeight = 0;
+  let stableCount = 0;
+  while (stableCount < 5) {
+    window.scrollTo(0, document.body.scrollHeight);
+    await new Promise(r => setTimeout(r, 800));
+    const newHeight = document.body.scrollHeight;
+    if (newHeight === lastHeight) { stableCount++; } else { stableCount = 0; }
+    lastHeight = newHeight;
+  }
+  window.scrollTo(0, 0);
+  console.log("Scroll complete. Scanning for photos...\n");
 
   // --- Step 1: Collect ONLY actual Forza gallery photo URLs ---
   // Forza serves each photo in 2 sizes (URL ending /4 = full-res, /2 = thumbnail).
