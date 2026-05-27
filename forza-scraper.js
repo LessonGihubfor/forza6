@@ -47,58 +47,63 @@
     });
   }
 
-  // --- Step 1: Scan ALL pages via fetch (reliable, no click issues) ---
-  // First, scan the current page
-  console.log("  Scanning current page...");
+  // --- Step 1: Scan ALL pages (SPA-aware with MutationObserver) ---
+  console.log("  Scanning page 1...");
   scanPage();
   console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
 
-  // Find all pagination page URLs from the current page
-  const pageUrls = new Set();
-  document.querySelectorAll("a[href]").forEach(a => {
-    const href = a.href;
-    if (href && (href.includes("/myforza") || href.includes("page=")) && a.textContent.trim().match(/^\d+$/)) {
-      pageUrls.add(href);
-    }
-  });
+  // Helper: wait for new gallery images to appear in DOM after page click
+  function waitForNewImages(timeoutMs = 8000) {
+    return new Promise(resolve => {
+      const beforeCount = photoUrls.length;
+      let resolved = false;
+      const done = () => { if (!resolved) { resolved = true; resolve(); } };
 
-  // Also try common URL patterns if no pagination links found
-  if (pageUrls.size === 0) {
-    const base = window.location.href.split("?")[0];
-    for (let p = 2; p <= 10; p++) {
-      pageUrls.add(`${base}?page=${p}`);
-    }
+      const observer = new MutationObserver(() => {
+        scanPage();
+        if (photoUrls.length > beforeCount) { observer.disconnect(); done(); }
+      });
+      observer.observe(document.body, {
+        childList: true, subtree: true,
+        attributes: true, attributeFilter: ["src", "style", "data-src"]
+      });
+
+      // Also poll every 500ms as a fallback
+      const poll = setInterval(() => {
+        scanPage();
+        if (photoUrls.length > beforeCount) { clearInterval(poll); observer.disconnect(); done(); }
+      }, 500);
+
+      setTimeout(() => { clearInterval(poll); observer.disconnect(); done(); }, timeoutMs);
+    });
   }
 
-  console.log(`  Found ${pageUrls.size} additional page URL(s) to scan`);
+  // Click through pages 2, 3, 4, ... until no new photos found
+  for (let nextPage = 2; nextPage <= 20; nextPage++) {
+    // Find a clickable element with just this page number
+    const pageLink = [...document.querySelectorAll("a, button, li, span")].find(el => {
+      const txt = el.textContent.trim();
+      return txt === String(nextPage) && el.offsetParent !== null && txt.length <= 2;
+    });
+    if (!pageLink) {
+      console.log(`  No page ${nextPage} link found. Done scanning.`);
+      break;
+    }
 
-  // Fetch each page and parse for photo URLs
-  for (const pageUrl of pageUrls) {
-    try {
-      console.log(`  Fetching: ${pageUrl}`);
-      const resp = await fetch(pageUrl, { credentials: "include" });
-      if (!resp.ok) continue;
-      const html = await resp.text();
+    const beforeCount = photoUrls.length;
+    console.log(`  Clicking page ${nextPage}...`);
+    pageLink.click();
 
-      // Parse the HTML and find all gallery image URLs
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-      doc.querySelectorAll("img").forEach(img => addUrl(img.src || img.getAttribute("src")));
-      doc.querySelectorAll("[style*='background-image']").forEach(el => {
-        const m = (el.getAttribute("style") || "").match(/url\(["']?(.+?)["']?\)/);
-        if (m) addUrl(m[1]);
-      });
-      doc.querySelectorAll("[data-src],[data-image],[data-photo]").forEach(el => {
-        addUrl(el.getAttribute("data-src") || el.getAttribute("data-image") || el.getAttribute("data-photo"));
-      });
+    // Wait for the SPA to render new images
+    await waitForNewImages(8000);
+    // Extra scan after wait
+    scanPage();
+    const newFound = photoUrls.length - beforeCount;
+    console.log(`    +${newFound} new photo(s), ${photoUrls.length} total`);
 
-      // Also scan raw HTML for any gallery image URLs we might have missed
-      const urlMatches = html.match(/t10pgalleryv2\.azureedge\.net\/galleryv2images\/[^\s"'<>]+/g) || [];
-      urlMatches.forEach(u => addUrl("https://" + u));
-
-      console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
-    } catch (e) {
-      console.warn(`    Failed to fetch page: ${e.message}`);
+    if (newFound === 0) {
+      console.log(`    No new photos on page ${nextPage}. Stopping.`);
+      break;
     }
   }
 
