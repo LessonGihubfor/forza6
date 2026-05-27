@@ -27,12 +27,8 @@
 
   function addUrl(src) {
     if (!src) return;
-    // Only gallery images from t10pgalleryv2 or xboxlive
-    const isGallery = src.includes("t10pgalleryv2.azureedge.net") ||
-                      src.includes("ugcorigin") ||
-                      src.includes("gameclipscontent") ||
-                      src.includes("xboxlive.com/image");
-    if (!isGallery) return;
+    // Only actual gallery photos from t10pgalleryv2 (skip avatars, logos, etc.)
+    if (!src.includes("t10pgalleryv2.azureedge.net/galleryv2images/")) return;
 
     // Extract the photo UUID from the URL to deduplicate
     // URL pattern: .../galleryv2images/{userID}/{photoUUID}/{size}
@@ -44,10 +40,10 @@
     if (seenUUID.has(uuid)) return;
     seenUUID.add(uuid);
 
-    // Force highest quality: replace any size with /1 (original)
+    // Force highest quality: replace /2 (thumb) with /4 (full 1920x1080)
     let fullResUrl = src;
-    if (["2", "3", "4"].includes(parts[sizeIdx])) {
-      parts[sizeIdx] = "1";
+    if (parts[sizeIdx] === "2" || parts[sizeIdx] === "3") {
+      parts[sizeIdx] = "4";
       fullResUrl = parts.join("/");
     }
 
