@@ -1,7 +1,7 @@
 {
-  "name": "Forza Gallery",
-  "short_name": "Forza",
-  "description": "Forza Motorsport 6 Screenshot Gallery",
+  "name": "Forza Horizon 6 Gallery",
+  "short_name": "FH6 Gallery",
+  "description": "Forza Horizon 6 Screenshot Gallery by Jacob Shanklin",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",

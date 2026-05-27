@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#0a0a0a"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-    <meta name="description" content="Forza Motorsport 6 Screenshot Gallery"/>
+    <meta name="description" content="Forza Horizon 6 Screenshot Gallery by Jacob Shanklin"/>
     <link rel="manifest" href="manifest.json"/>
     <link rel="apple-touch-icon" href="icon-192.png"/>
-    <title>Forza Gallery</title>
+    <title>Forza Horizon 6 Gallery</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
@@ -100,7 +100,7 @@
         <div class="hdr-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
         </div>
-        <span class="hdr-t">Forza Gallery</span>
+        <span class="hdr-t">Forza Horizon 6 Gallery</span>
         <div class="hdr-actions">
           <span id="badge" class="hdr-badge d-none"></span>
           <button id="save-all-btn" class="btn-save-all d-none">
@@ -347,7 +347,7 @@
           if(!allPhotos.length){show(els.empty);els.count.textContent="";return}
           renderPhotos(allPhotos);show(els.grid);
           els.badge.textContent=allPhotos.length;show(els.badge);show(els.saveAll);
-          els.count.textContent=`${allPhotos.length} photo${allPhotos.length===1?"":"s"} from Forza Motorsport 6`;
+          els.count.textContent=`${allPhotos.length} photo${allPhotos.length===1?"":"s"} by Jacob Shanklin`;
         } catch(err){hide(els.loading);els.errorMsg.textContent=err?.message||"Unknown error";show(els.error)}
       }
       els.retry.addEventListener("click",loadPhotos);
