@@ -1,22 +1,19 @@
 // ============================================================
-//  FORZA.NET → CLOUDINARY AUTO-SYNC SCRIPT (v2 — Server Proxy)
+//  FORZA.NET → CLOUDINARY AUTO-SYNC SCRIPT (v4 — Full Auto)
 // ============================================================
 //  USAGE:
 //    1. Open https://forza.net/myforza in your browser
 //    2. Log in with your Xbox account
-//    3. Scroll down so ALL your photos are visible on the page
-//    4. Open the browser console (F12 → Console)
-//    5. Paste this ENTIRE script and press Enter
-//    6. It sends your photo URLs to the Render backend,
-//       which fetches them server-side (bypasses CORS) and
-//       uploads to Cloudinary automatically.
-//    7. Your gallery at forza6.vercel.app updates instantly.
+//    3. Open the browser console (F12 → Console)
+//    4. Paste this ENTIRE script and press Enter
+//    5. It auto-loads ALL pages via hidden iframes,
+//       then uploads every photo to Cloudinary.
 // ============================================================
 
 (async function forzaToCloudinary() {
   const API = "https://forza-gallery-api.onrender.com";
 
-  console.log("%c FORZA GALLERY SYNC v3 ", "background:#3b82f6;color:#fff;font-size:16px;padding:4px 12px;border-radius:6px;");
+  console.log("%c FORZA GALLERY SYNC v4 (FULL AUTO) ", "background:#3b82f6;color:#fff;font-size:16px;padding:4px 12px;border-radius:6px;");
 
   // --- Helpers ---
   const seenUUID = new Set();
@@ -24,87 +21,145 @@
 
   function addUrl(src) {
     if (!src) return;
-    if (!src.includes("t10pgalleryv2.azureedge.net/galleryv2images/")) return;
+    // Clean query strings
+    src = src.split("?")[0].split("#")[0];
+    if (!src.includes("t10pgalleryv2.azureedge.net") && !src.includes("galleryv2images")) return;
+    // Extract UUID: URL pattern .../galleryv2images/{userID}/{photoUUID}/{size}
     const parts = src.split("/");
-    const sizeIdx = parts.length - 1;
-    const uuid = parts[parts.length - 2] || src;
+    // Find the "galleryv2images" segment to anchor our parsing
+    const gIdx = parts.indexOf("galleryv2images");
+    if (gIdx === -1 || gIdx + 3 > parts.length - 1) return;
+    const uuid = parts[gIdx + 2]; // photoUUID
+    const size = parts[gIdx + 3]; // size (2,3,4)
+    if (!uuid || uuid.length < 8) return;
     if (seenUUID.has(uuid)) return;
     seenUUID.add(uuid);
-    if (parts[sizeIdx] === "2" || parts[sizeIdx] === "3") {
-      parts[sizeIdx] = "4";
-    }
+    // Force /4 (highest res)
+    parts[gIdx + 3] = "4";
     photoUrls.push(parts.join("/"));
   }
 
-  function scanPage() {
-    document.querySelectorAll("img").forEach(img => addUrl(img.src));
-    document.querySelectorAll("[style*='background-image']").forEach(el => {
-      const m = el.style.backgroundImage.match(/url\(["']?(.+?)["']?\)/);
-      if (m) addUrl(m[1]);
+  function scanDOM(doc) {
+    doc.querySelectorAll("img").forEach(img => {
+      addUrl(img.src);
+      addUrl(img.getAttribute("data-src"));
+      addUrl(img.getAttribute("srcset"));
     });
-    document.querySelectorAll("[data-src],[data-image],[data-photo]").forEach(el => {
-      addUrl(el.dataset.src || el.dataset.image || el.dataset.photo);
+    doc.querySelectorAll("[style*='background']").forEach(el => {
+      const m = (el.getAttribute("style") || el.style.cssText || "").match(/url\(["']?(.+?)["']?\)/g);
+      if (m) m.forEach(u => addUrl(u.replace(/url\(["']?|["']?\)/g, "")));
     });
+    // Brute-force: regex scan entire HTML
+    const html = doc.documentElement.innerHTML;
+    const matches = html.match(/t10pgalleryv2[^"'\s<>)]+galleryv2images\/[^"'\s<>)]+/g) || [];
+    matches.forEach(u => addUrl("https://" + u.replace(/^https?:\/\//, "")));
   }
 
-  // --- Step 1: Scan ALL pages (SPA-aware with MutationObserver) ---
-  console.log("  Scanning page 1...");
-  scanPage();
-  console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
+  // --- Step 1: Scan current page ---
+  console.log("  Scanning current page...");
+  scanDOM(document);
+  console.log(`    Page 1: ${photoUrls.length} photos`);
 
-  // Helper: wait for new gallery images to appear in DOM after page click
-  function waitForNewImages(timeoutMs = 8000) {
-    return new Promise(resolve => {
-      const beforeCount = photoUrls.length;
-      let resolved = false;
-      const done = () => { if (!resolved) { resolved = true; resolve(); } };
-
-      const observer = new MutationObserver(() => {
-        scanPage();
-        if (photoUrls.length > beforeCount) { observer.disconnect(); done(); }
-      });
-      observer.observe(document.body, {
-        childList: true, subtree: true,
-        attributes: true, attributeFilter: ["src", "style", "data-src"]
-      });
-
-      // Also poll every 500ms as a fallback
-      const poll = setInterval(() => {
-        scanPage();
-        if (photoUrls.length > beforeCount) { clearInterval(poll); observer.disconnect(); done(); }
-      }, 500);
-
-      setTimeout(() => { clearInterval(poll); observer.disconnect(); done(); }, timeoutMs);
-    });
-  }
-
-  // Click through pages 2, 3, 4, ... until no new photos found
-  for (let nextPage = 2; nextPage <= 20; nextPage++) {
-    // Find a clickable element with just this page number
-    const pageLink = [...document.querySelectorAll("a, button, li, span")].find(el => {
-      const txt = el.textContent.trim();
-      return txt === String(nextPage) && el.offsetParent !== null && txt.length <= 2;
-    });
-    if (!pageLink) {
-      console.log(`  No page ${nextPage} link found. Done scanning.`);
-      break;
+  // --- Step 2: Find all pagination links ---
+  const pageHrefs = new Set();
+  document.querySelectorAll("a[href]").forEach(a => {
+    const href = a.href;
+    const rawHref = a.getAttribute("href");
+    if (rawHref && (rawHref.includes("page") || rawHref.includes("/myforza")) && a.textContent.trim().match(/^\d+$/)) {
+      const num = parseInt(a.textContent.trim());
+      if (num >= 2) pageHrefs.add(href);
     }
+  });
 
+  // If no pagination links found, try brute-force URL patterns
+  if (pageHrefs.size === 0) {
+    console.log("  No pagination links found, trying URL patterns...");
+    const base = window.location.href.split("?")[0].split("#")[0];
+    for (let p = 2; p <= 10; p++) {
+      pageHrefs.add(`${base}?page=${p}`);
+    }
+  }
+
+  console.log(`  Found ${pageHrefs.size} additional page(s) to scan`);
+
+  // --- Step 3: Load each page in a hidden iframe (same-origin = full DOM access) ---
+  for (const href of pageHrefs) {
     const beforeCount = photoUrls.length;
-    console.log(`  Clicking page ${nextPage}...`);
-    pageLink.click();
+    console.log(`  Loading: ${href}`);
+    try {
+      await new Promise((resolve, reject) => {
+        const iframe = document.createElement("iframe");
+        iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none";
+        iframe.src = href;
 
-    // Wait for the SPA to render new images
-    await waitForNewImages(8000);
-    // Extra scan after wait
-    scanPage();
-    const newFound = photoUrls.length - beforeCount;
-    console.log(`    +${newFound} new photo(s), ${photoUrls.length} total`);
+        const timeout = setTimeout(() => { iframe.remove(); resolve(); }, 15000);
 
-    if (newFound === 0) {
-      console.log(`    No new photos on page ${nextPage}. Stopping.`);
+        iframe.onload = () => {
+          // Wait extra time for SPA to render images
+          setTimeout(() => {
+            try {
+              scanDOM(iframe.contentDocument);
+            } catch(e) {
+              console.warn("    Couldn't access iframe DOM:", e.message);
+              // Fallback: try to get the HTML via fetch
+            }
+            clearTimeout(timeout);
+            iframe.remove();
+            resolve();
+          }, 4000);
+        };
+        iframe.onerror = () => { clearTimeout(timeout); iframe.remove(); resolve(); };
+        document.body.appendChild(iframe);
+      });
+    } catch(e) {
+      console.warn("    iframe error:", e.message);
+    }
+
+    const newCount = photoUrls.length - beforeCount;
+    console.log(`    +${newCount} new photos (${photoUrls.length} total)`);
+
+    // If iframe didn't work, no point continuing with iframes
+    if (newCount === 0 && photoUrls.length <= 20) {
+      console.log("  Iframe didn't find new photos. Trying XHR intercept...");
       break;
     }
+  }
+
+  // --- Step 4: If still only page 1, try intercepting network + clicking ---
+  if (photoUrls.length <= 20) {
+    console.log("  Trying click + network intercept approach...");
+    const intercepted = [];
+    const _origFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const resp = await _origFetch.apply(this, args);
+      try {
+        const clone = resp.clone();
+        const text = await clone.text();
+        const urls = text.match(/t10pgalleryv2[^"'\s<>)]*galleryv2images\/[^"'\s<>)]+/g) || [];
+        urls.forEach(u => intercepted.push("https://" + u.replace(/^https?:\/\//, "")));
+      } catch(e) {}
+      return resp;
+    };
+
+    // Click each page number
+    for (let p = 2; p <= 10; p++) {
+      const el = [...document.querySelectorAll("a")].find(a => a.textContent.trim() === String(p));
+      if (!el) break;
+      console.log(`  Clicking page ${p}...`);
+      el.click();
+      await new Promise(r => setTimeout(r, 4000));
+
+      // Scan DOM after click
+      scanDOM(document);
+
+      // Also add any intercepted URLs
+      intercepted.forEach(u => addUrl(u));
+      intercepted.length = 0;
+
+      console.log(`    ${photoUrls.length} total photos`);
+    }
+
+    window.fetch = _origFetch; // restore
   }
 
   if (photoUrls.length === 0) {
