@@ -18,64 +18,68 @@
 
   console.log("%c FORZA GALLERY SYNC v3 ", "background:#3b82f6;color:#fff;font-size:16px;padding:4px 12px;border-radius:6px;");
 
-  // --- Auto-scroll to load ALL lazy-loaded photos ---
-  console.log("Auto-scrolling to load all photos...");
-  let lastHeight = 0;
-  let stableCount = 0;
-  while (stableCount < 5) {
-    window.scrollTo(0, document.body.scrollHeight);
-    await new Promise(r => setTimeout(r, 800));
-    const newHeight = document.body.scrollHeight;
-    if (newHeight === lastHeight) { stableCount++; } else { stableCount = 0; }
-    lastHeight = newHeight;
-  }
-  window.scrollTo(0, 0);
-  console.log("Scroll complete. Scanning for photos...\n");
-
-  // --- Step 1: Collect ONLY actual Forza gallery photo URLs ---
-  // Forza serves each photo in 2 sizes (URL ending /4 = full-res, /2 = thumbnail).
-  // We only want the /4 (full-res) version, and we dedupe by the photo UUID.
+  // --- Helpers ---
   const seenUUID = new Set();
   const photoUrls = [];
 
   function addUrl(src) {
     if (!src) return;
-    // Only actual gallery photos from t10pgalleryv2 (skip avatars, logos, etc.)
     if (!src.includes("t10pgalleryv2.azureedge.net/galleryv2images/")) return;
-
-    // Extract the photo UUID from the URL to deduplicate
-    // URL pattern: .../galleryv2images/{userID}/{photoUUID}/{size}
     const parts = src.split("/");
     const sizeIdx = parts.length - 1;
-    const uuidIdx = parts.length - 2;
-    const uuid = parts[uuidIdx] || src;
-
+    const uuid = parts[parts.length - 2] || src;
     if (seenUUID.has(uuid)) return;
     seenUUID.add(uuid);
-
-    // Force highest quality: replace /2 (thumb) with /4 (full 1920x1080)
-    let fullResUrl = src;
     if (parts[sizeIdx] === "2" || parts[sizeIdx] === "3") {
       parts[sizeIdx] = "4";
-      fullResUrl = parts.join("/");
     }
-
-    photoUrls.push(fullResUrl);
+    photoUrls.push(parts.join("/"));
   }
 
-  // Scan all img tags
-  document.querySelectorAll("img").forEach((img) => addUrl(img.src));
+  function scanPage() {
+    document.querySelectorAll("img").forEach(img => addUrl(img.src));
+    document.querySelectorAll("[style*='background-image']").forEach(el => {
+      const m = el.style.backgroundImage.match(/url\(["']?(.+?)["']?\)/);
+      if (m) addUrl(m[1]);
+    });
+    document.querySelectorAll("[data-src],[data-image],[data-photo]").forEach(el => {
+      addUrl(el.dataset.src || el.dataset.image || el.dataset.photo);
+    });
+  }
 
-  // Scan background-image styles
-  document.querySelectorAll("[style*='background-image']").forEach((el) => {
-    const match = el.style.backgroundImage.match(/url\(["']?(.+?)["']?\)/);
-    if (match) addUrl(match[1]);
-  });
+  // --- Step 1: Scan ALL pages (pagination: 1, 2, 3, 4...) ---
+  let pageNum = 1;
+  while (true) {
+    console.log(`  Scanning page ${pageNum}...`);
+    window.scrollTo(0, document.body.scrollHeight);
+    await new Promise(r => setTimeout(r, 600));
+    window.scrollTo(0, 0);
+    scanPage();
+    console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
 
-  // Scan data attributes
-  document.querySelectorAll("[data-src], [data-image], [data-photo]").forEach((el) => {
-    addUrl(el.dataset.src || el.dataset.image || el.dataset.photo);
-  });
+    // Find the "next page" button ( > or › )
+    const nextBtn = [...document.querySelectorAll("a, button")].find(el => {
+      const txt = el.textContent.trim();
+      const label = (el.getAttribute("aria-label") || "").toLowerCase();
+      return txt === "›" || txt === ">" || txt === "»" || label.includes("next");
+    });
+
+    // Also check if there's a numbered page link for the next page
+    const nextPageLink = !nextBtn ? [...document.querySelectorAll("a")].find(a => {
+      return a.textContent.trim() === String(pageNum + 1);
+    }) : null;
+
+    const clickTarget = nextBtn || nextPageLink;
+    if (!clickTarget || clickTarget.classList.contains("disabled") || clickTarget.getAttribute("aria-disabled") === "true") {
+      console.log(`  Reached last page (${pageNum}).`);
+      break;
+    }
+
+    clickTarget.click();
+    pageNum++;
+    // Wait for page content to load
+    await new Promise(r => setTimeout(r, 2000));
+  }
 
   if (photoUrls.length === 0) {
     console.warn("%c No Forza photos found! ", "background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;");
