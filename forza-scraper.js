@@ -47,31 +47,59 @@
     });
   }
 
-  // --- Step 1: Scan ALL pages by clicking page numbers ---
-  console.log("  Scanning page 1...");
+  // --- Step 1: Scan ALL pages via fetch (reliable, no click issues) ---
+  // First, scan the current page
+  console.log("  Scanning current page...");
   scanPage();
   console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
 
-  // Click through page 2, 3, 4, ... until no more pages
-  for (let nextPage = 2; nextPage <= 20; nextPage++) {
-    // Find a link/button whose text is exactly the next page number
-    const pageLink = [...document.querySelectorAll("a, button, li, span")].find(el => {
-      return el.textContent.trim() === String(nextPage) && el.offsetParent !== null;
-    });
-    if (!pageLink) {
-      console.log(`  No page ${nextPage} found. Done scanning.`);
-      break;
+  // Find all pagination page URLs from the current page
+  const pageUrls = new Set();
+  document.querySelectorAll("a[href]").forEach(a => {
+    const href = a.href;
+    if (href && (href.includes("/myforza") || href.includes("page=")) && a.textContent.trim().match(/^\d+$/)) {
+      pageUrls.add(href);
     }
+  });
 
-    console.log(`  Clicking page ${nextPage}...`);
-    pageLink.click();
-    // Wait for page to load new photos
-    await new Promise(r => setTimeout(r, 2500));
-    window.scrollTo(0, document.body.scrollHeight);
-    await new Promise(r => setTimeout(r, 800));
-    window.scrollTo(0, 0);
-    scanPage();
-    console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
+  // Also try common URL patterns if no pagination links found
+  if (pageUrls.size === 0) {
+    const base = window.location.href.split("?")[0];
+    for (let p = 2; p <= 10; p++) {
+      pageUrls.add(`${base}?page=${p}`);
+    }
+  }
+
+  console.log(`  Found ${pageUrls.size} additional page URL(s) to scan`);
+
+  // Fetch each page and parse for photo URLs
+  for (const pageUrl of pageUrls) {
+    try {
+      console.log(`  Fetching: ${pageUrl}`);
+      const resp = await fetch(pageUrl, { credentials: "include" });
+      if (!resp.ok) continue;
+      const html = await resp.text();
+
+      // Parse the HTML and find all gallery image URLs
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      doc.querySelectorAll("img").forEach(img => addUrl(img.src || img.getAttribute("src")));
+      doc.querySelectorAll("[style*='background-image']").forEach(el => {
+        const m = (el.getAttribute("style") || "").match(/url\(["']?(.+?)["']?\)/);
+        if (m) addUrl(m[1]);
+      });
+      doc.querySelectorAll("[data-src],[data-image],[data-photo]").forEach(el => {
+        addUrl(el.getAttribute("data-src") || el.getAttribute("data-image") || el.getAttribute("data-photo"));
+      });
+
+      // Also scan raw HTML for any gallery image URLs we might have missed
+      const urlMatches = html.match(/t10pgalleryv2\.azureedge\.net\/galleryv2images\/[^\s"'<>]+/g) || [];
+      urlMatches.forEach(u => addUrl("https://" + u));
+
+      console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
+    } catch (e) {
+      console.warn(`    Failed to fetch page: ${e.message}`);
+    }
   }
 
   if (photoUrls.length === 0) {
