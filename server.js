@@ -105,16 +105,25 @@ app.post('/api/upload-urls', async (req, res) => {
     const batch = urls.slice(0, 50);
     const results = [];
 
-    for (const url of batch) {
+    for (let url of batch) {
       try {
-        // Create a consistent ID from the URL so re-runs skip duplicates
-        const urlHash = crypto.createHash('md5').update(url.split('?')[0]).digest('hex').substring(0, 12);
-        const publicId = `forza_${urlHash}`;
+        // Force the /4 (full-res) version — never upload thumbnails
+        const urlClean = url.split('?')[0];
+        if (urlClean.match(/\/[23]$/)) {
+          url = urlClean.replace(/\/[23]$/, '/4');
+        }
+
+        // Hash only the photo UUID for consistent dedup regardless of size suffix
+        // URL pattern: .../galleryv2images/{userID}/{photoUUID}/{size}
+        const urlParts = urlClean.split('/');
+        const photoUUID = urlParts[urlParts.length - 2] || '';
+        const publicId = photoUUID
+          ? `fh6_${crypto.createHash('md5').update(photoUUID).digest('hex').substring(0, 12)}`
+          : `fh6_${crypto.createHash('md5').update(urlClean).digest('hex').substring(0, 12)}`;
 
         // Check if this image already exists
         try {
           await cloudinary.api.resource(`forza_gallery/${publicId}`);
-          // If no error, it already exists — skip it
           results.push({ url, status: 'skipped', reason: 'already exists' });
           console.log(`Skipped (duplicate): ${publicId}`);
           continue;
