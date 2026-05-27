@@ -104,13 +104,17 @@
         totalUploaded += data.uploaded || 0;
         totalFailed += data.failed || 0;
 
+        let batchSkipped = 0;
         (data.results || []).forEach((r) => {
           if (r.status === "uploaded") {
             console.log(`    UPLOADED: ${r.cloudinary_url}`);
+          } else if (r.status === "skipped") {
+            batchSkipped++;
           } else {
             console.log(`    FAILED: ${r.url.substring(0, 60)}... — ${r.error}`);
           }
         });
+        if (batchSkipped > 0) console.log(`    Skipped ${batchSkipped} duplicate(s)`);
       } else {
         const errText = await res.text();
         console.error(`    Batch ${batchNum} server error:`, errText);

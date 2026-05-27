@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const { v2: cloudinary } = require('cloudinary');
 
 const app = express();
@@ -97,17 +98,31 @@ app.post('/api/upload-urls', async (req, res) => {
 
     for (const url of batch) {
       try {
-        // Cloudinary can fetch remote URLs directly
+        // Create a consistent ID from the URL so re-runs skip duplicates
+        const urlHash = crypto.createHash('md5').update(url.split('?')[0]).digest('hex').substring(0, 12);
+        const publicId = `forza_${urlHash}`;
+
+        // Check if this image already exists
+        try {
+          await cloudinary.api.resource(`forza_gallery/${publicId}`);
+          // If no error, it already exists — skip it
+          results.push({ url, status: 'skipped', reason: 'already exists' });
+          console.log(`Skipped (duplicate): ${publicId}`);
+          continue;
+        } catch (checkErr) {
+          // Resource not found = good, upload it
+        }
+
         const uploadResult = await cloudinary.uploader.upload(url, {
           folder: 'forza_gallery',
+          public_id: publicId,
           resource_type: 'image',
           overwrite: false,
-          unique_filename: true,
+          unique_filename: false,
         });
         results.push({ url, status: 'uploaded', cloudinary_url: uploadResult.secure_url });
         console.log(`Uploaded: ${uploadResult.secure_url}`);
       } catch (err) {
-        // Skip duplicates or failures
         const msg = err && err.message ? err.message : String(err);
         console.error(`Failed to upload ${url}: ${msg}`);
         results.push({ url, status: 'failed', error: msg });
