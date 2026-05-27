@@ -61,9 +61,13 @@ app.get('/api/photos', async (req, res) => {
       thumbnail: cloudinary.url(r.public_id, {
         secure: true,
         transformation: [
-          { width: 600, height: 600, crop: 'fill', gravity: 'auto' },
-          { quality: 'auto', fetch_format: 'auto' },
+          { width: 960, crop: 'scale' },
+          { quality: 100 },
         ],
+      }),
+      full: cloudinary.url(r.public_id, {
+        secure: true,
+        transformation: [{ quality: 100 }],
       }),
       width: r.width,
       height: r.height,

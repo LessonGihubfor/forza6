@@ -201,7 +201,7 @@
 
       function renderPhotos(photos) {
         els.grid.innerHTML = photos.map((p, i) => {
-          const thumb = esc(p.thumbnail || p.url), full = esc(p.url);
+          const thumb = esc(p.thumbnail || p.url), full = esc(p.full || p.url);
           return `<div class="card" style="animation-delay:${Math.min(i * .04, .4).toFixed(2)}s">
             <div class="card-img-wrap" data-thumb="${thumb}" data-full="${full}">
               <img class="card-img" src="${thumb}" alt="Forza screenshot" loading="lazy" decoding="async"/>

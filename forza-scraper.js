@@ -44,10 +44,10 @@
     if (seenUUID.has(uuid)) return;
     seenUUID.add(uuid);
 
-    // Prefer full-res: replace /2 (thumb) with /4 (full) at end of URL
+    // Force highest quality: replace any size with /1 (original)
     let fullResUrl = src;
-    if (parts[sizeIdx] === "2") {
-      parts[sizeIdx] = "4";
+    if (["2", "3", "4"].includes(parts[sizeIdx])) {
+      parts[sizeIdx] = "1";
       fullResUrl = parts.join("/");
     }
 
