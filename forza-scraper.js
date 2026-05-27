@@ -47,38 +47,31 @@
     });
   }
 
-  // --- Step 1: Scan ALL pages (pagination: 1, 2, 3, 4...) ---
-  let pageNum = 1;
-  while (true) {
-    console.log(`  Scanning page ${pageNum}...`);
-    window.scrollTo(0, document.body.scrollHeight);
-    await new Promise(r => setTimeout(r, 600));
-    window.scrollTo(0, 0);
-    scanPage();
-    console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
+  // --- Step 1: Scan ALL pages by clicking page numbers ---
+  console.log("  Scanning page 1...");
+  scanPage();
+  console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
 
-    // Find the "next page" button ( > or › )
-    const nextBtn = [...document.querySelectorAll("a, button")].find(el => {
-      const txt = el.textContent.trim();
-      const label = (el.getAttribute("aria-label") || "").toLowerCase();
-      return txt === "›" || txt === ">" || txt === "»" || label.includes("next");
+  // Click through page 2, 3, 4, ... until no more pages
+  for (let nextPage = 2; nextPage <= 20; nextPage++) {
+    // Find a link/button whose text is exactly the next page number
+    const pageLink = [...document.querySelectorAll("a, button, li, span")].find(el => {
+      return el.textContent.trim() === String(nextPage) && el.offsetParent !== null;
     });
-
-    // Also check if there's a numbered page link for the next page
-    const nextPageLink = !nextBtn ? [...document.querySelectorAll("a")].find(a => {
-      return a.textContent.trim() === String(pageNum + 1);
-    }) : null;
-
-    const clickTarget = nextBtn || nextPageLink;
-    if (!clickTarget || clickTarget.classList.contains("disabled") || clickTarget.getAttribute("aria-disabled") === "true") {
-      console.log(`  Reached last page (${pageNum}).`);
+    if (!pageLink) {
+      console.log(`  No page ${nextPage} found. Done scanning.`);
       break;
     }
 
-    clickTarget.click();
-    pageNum++;
-    // Wait for page content to load
-    await new Promise(r => setTimeout(r, 2000));
+    console.log(`  Clicking page ${nextPage}...`);
+    pageLink.click();
+    // Wait for page to load new photos
+    await new Promise(r => setTimeout(r, 2500));
+    window.scrollTo(0, document.body.scrollHeight);
+    await new Promise(r => setTimeout(r, 800));
+    window.scrollTo(0, 0);
+    scanPage();
+    console.log(`    Found ${photoUrls.length} unique photo(s) so far`);
   }
 
   if (photoUrls.length === 0) {
