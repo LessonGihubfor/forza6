@@ -1,12 +1,21 @@
-HOW TO CREATE A ONE-CLICK SYNC BOOKMARKLET
-===========================================
+FORZA GALLERY SYNC - V5 (SPA-Ready)
+====================================
 
-1. Right-click your browser's bookmarks bar
-2. Click "Add page" or "Add bookmark"
-3. Name it: "Sync Forza Photos"
-4. In the URL field, paste this ENTIRE line below (it's all one line):
+The v5 script is too large for a bookmarklet. Use this method instead:
 
-javascript:void((async function(){const C="dqwnsi211",P="forza_unsigned";console.log("Forza Gallery Sync starting...");const S=['img[src*="forzamotorsport.net"]','img[src*="forza.net"]','img[src*="ugcorigin"]','img[src*="xboxlive.com"]','.gallery img','[class*="gallery"] img','[class*="photo"] img'];const seen=new Set(),imgs=[];S.forEach(s=>document.querySelectorAll(s).forEach(i=>{let src=i.src;if(src&&!seen.has(src)&&(!i.naturalWidth||i.naturalWidth>100)){seen.add(src);imgs.push(src)}}));if(!imgs.length){alert("No Forza photos found on this page!");return}if(!confirm(`Found ${imgs.length} photos. Upload to Cloudinary?`))return;let u=0,f=0;for(let i=0;i<imgs.length;i++){try{const r=await fetch(imgs[i]);const b=await r.blob();const fd=new FormData();fd.append("file",b,`forza_${Date.now()}_${i}.png`);fd.append("upload_preset",P);fd.append("folder","forza_gallery");const cr=await fetch(`https://api.cloudinary.com/v1_1/${C}/image/upload`,{method:"POST",body:fd});if(cr.ok)u++;else f++}catch(e){f++}await new Promise(r=>setTimeout(r,800))}alert(`Done! Uploaded: ${u}, Failed: ${f}\nView: https://forza6.vercel.app`)})())
+1. Open https://forza.net/myforza in your browser
+2. Log in with your Xbox account
+3. Scroll ALL the way down to load every photo (triggers lazy loading)
+4. Open browser console (F12 → Console tab)
+5. Copy the ENTIRE contents of forza-scraper.js
+6. Paste into console and press Enter
 
-5. Save the bookmark
-6. Now whenever you're on forza.net/myforza, just click the bookmark!
+The script will:
+- Auto-scroll to trigger lazy loading
+- Scan all pages via hidden iframes
+- Upload all photos to Cloudinary
+
+TROUBLESHOOTING:
+- If you get 0 new photos from iframes, the site may have changed
+- Try scrolling down manually on each page before running
+- Check console for detailed progress messages

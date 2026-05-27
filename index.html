@@ -7,6 +7,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
     <meta name="description" content="Forza Horizon 6 Screenshot Gallery by Jacob Shanklin"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
     <link rel="manifest" href="manifest.json"/>
     <link rel="apple-touch-icon" href="icon-192.png"/>
     <title>Forza Horizon 6 Gallery</title>
@@ -43,7 +46,7 @@
       @media(min-width:640px){.card{margin-bottom:14px}}
       .card:hover{transform:translateY(-3px);border-color:rgba(59,130,246,.35);box-shadow:0 12px 40px rgba(0,0,0,.5)}
       .card-w{position:relative;overflow:hidden;cursor:pointer}
-      .card-img{width:100%;display:block;background:#111;transition:transform .35s}
+      .card-img{width:100%;display:block;background:#111;transition:transform .35s;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
       .card:hover .card-img{transform:scale(1.04)}
       .card-ov{position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.6));opacity:0;transition:opacity .25s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px}
       .card:hover .card-ov,.card-w:active .card-ov{opacity:1}
@@ -58,7 +61,7 @@
       /* LIGHTBOX */
       .lb{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s;touch-action:none}
       .lb.open{display:flex}
-      .lb-img{max-width:94%;max-height:74vh;border-radius:var(--r);box-shadow:0 24px 80px rgba(0,0,0,.7);object-fit:contain;user-select:none;-webkit-user-drag:none}
+      .lb-img{max-width:98%;max-height:90vh;border-radius:var(--r);box-shadow:0 24px 80px rgba(0,0,0,.7);object-fit:contain;user-select:none;-webkit-user-drag:none;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
       .lb-counter{font-size:.7rem;color:var(--t3);margin-top:8px;font-weight:600}
       .lb-bar{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
       .lb-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;font-size:.78rem;font-weight:700;border:none;border-radius:var(--rs);cursor:pointer;transition:all .15s;text-decoration:none;color:#fff}
@@ -97,8 +100,25 @@
   <body>
     <header class="hdr">
       <div class="hdr-in">
-        <div class="hdr-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        <div class="hdr-icon" style="background: linear-gradient(135deg, #c41230, #8b0d22); display: flex; align-items: center; justify-content: center;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 45" width="38" height="17" fill="none">
+            <!-- Porsche 911 sports car silhouette -->
+            <path fill="#fff" d="M5 38c0-12 8-22 20-25 5-1 10-2 15-1 3 0 6 1 9 2 4 1 8 4 11 8 3 4 5 9 5 16H5z"/>
+            <!-- Lower body line for 911 shape -->
+            <path fill="none" stroke="#fff" stroke-width="0.5" d="M8 35c2-8 8-14 18-16 6-1 12-1 18 0 5 1 10 4 13 9 2 3 3 6 3 7"/>
+            <!-- Classic 911 round headlights -->
+            <ellipse cx="18" cy="22" rx="4" ry="3" fill="#fff" opacity="0.9"/>
+            <ellipse cx="28" cy="22" rx="4" ry="3" fill="#fff" opacity="0.9"/>
+            <!-- Wheels with Porsche style -->
+            <ellipse cx="25" cy="35" rx="8" ry="8" fill="#1a1a1a"/>
+            <ellipse cx="25" cy="35" rx="5" ry="5" fill="#444"/>
+            <ellipse cx="25" cy="35" rx="2" ry="2" fill="#888"/>
+            <ellipse cx="78" cy="35" rx="8" ry="8" fill="#1a1a1a"/>
+            <ellipse cx="78" cy="35" rx="5" ry="5" fill="#444"/>
+            <ellipse cx="78" cy="35" rx="2" ry="2" fill="#888"/>
+            <!-- 911 badge text -->
+            <text x="50" y="15" text-anchor="middle" fill="#c41230" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="11" letter-spacing="2">911</text>
+          </svg>
         </div>
         <span class="hdr-t">Forza Horizon 6 Gallery</span>
         <div class="hdr-actions">
@@ -151,7 +171,8 @@
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Save
         </button>
-        <a id="lb-open" class="lb-btn lb-op" href="#" target="_blank" rel="noopener noreferrer">Full Size</a>
+        <a id="lb-open" class="lb-btn lb-op" href="#" target="_blank" rel="noopener noreferrer">View 4K</a>
+        <a id="lb-raw" class="lb-btn lb-gh" href="#" target="_blank" rel="noopener noreferrer">Download Original</a>
         <button id="lb-close2" class="lb-btn lb-gh">Close</button>
       </div>
     </div>
@@ -282,7 +303,8 @@
         if (idx < 0 || idx >= allPhotos.length) return;
         lbIdx = idx;
         const p = allPhotos[idx];
-        els.lbImg.src = p.thumbnail || p.url;
+        // Use FULL resolution image in lightbox, not thumbnail
+        els.lbImg.src = p.full || p.url;
         els.lbOpen.href = p.full || p.url;
         els.lbCounter.textContent = `${idx+1} / ${allPhotos.length}`;
         els.lb.classList.add("open");
@@ -339,7 +361,7 @@
       async function loadPhotos() {
         hide(els.error);hide(els.empty);hide(els.grid);hide(els.badge);hide(els.saveAll);show(els.loading);
         try {
-          const res = await fetch(`${API}/api/photos?max=200`,{headers:{Accept:"application/json"}});
+          const res = await fetch(`${API}/api/photos?max=200`,{headers:{Accept:"application/json", "Cache-Control":"no-cache"}});
           if(!res.ok){let d=`HTTP ${res.status}`;try{const j=await res.json();if(j.error)d=j.error}catch(_){}throw new Error(d)}
           const data = await res.json();
           allPhotos = (data&&data.photos)||[];
