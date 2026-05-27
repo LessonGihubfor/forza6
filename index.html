@@ -176,17 +176,44 @@
       let lbIdx = 0;
 
       // ---- SAVE PHOTO ----
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
       async function savePhoto(url, btn) {
         const orig = btn ? btn.innerHTML : "";
         if (btn) { btn.innerHTML = "Saving…"; btn.classList.add("saving"); }
         try {
-          const r = await fetch(url); const blob = await r.blob();
-          const file = new File([blob], "forza-photo.jpg", { type: blob.type });
+          const r = await fetch(url);
+          const blob = await r.blob();
+          const file = new File([blob], "forza-photo.jpg", { type: "image/jpeg" });
+
+          // iOS: Web Share API → share sheet with "Save Image" option (1 tap to Camera Roll)
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: "Forza Screenshot" });
-            if (btn) { btn.innerHTML = "Saved!"; setTimeout(()=>{btn.innerHTML=orig;btn.classList.remove("saving")},2000); }
+            try {
+              await navigator.share({ files: [file], title: "Forza Screenshot" });
+              if (btn) { btn.innerHTML = "Saved!"; setTimeout(()=>{btn.innerHTML=orig;btn.classList.remove("saving")},2000); }
+              return;
+            } catch(shareErr) {
+              // User cancelled share sheet — that's ok, don't fall through
+              if (shareErr.name === "AbortError") {
+                if (btn) { btn.innerHTML=orig; btn.classList.remove("saving"); }
+                return;
+              }
+            }
+          }
+
+          if (isIOS) {
+            // iOS fallback: open raw image in new tab → long-press → "Add to Photos"
+            const imgUrl = URL.createObjectURL(blob);
+            const w = window.open("", "_blank");
+            if (w) {
+              w.document.write(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Save to Photos</title><style>*{margin:0;padding:0;background:#000}body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,sans-serif}img{max-width:100%;max-height:80vh;object-fit:contain}p{color:#fff;margin-top:16px;font-size:15px;font-weight:600;text-align:center;padding:0 20px}span{color:#3b82f6}</style></head><body><img src="${imgUrl}"><p>Long-press the image → tap <span>Add to Photos</span></p></body></html>`);
+              w.document.close();
+            }
+            if (btn) { btn.innerHTML="Long-press to save"; setTimeout(()=>{btn.innerHTML=orig;btn.classList.remove("saving")},3000); }
             return;
           }
+
+          // Desktop: trigger download
           const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
           a.download = "forza-photo.jpg"; document.body.appendChild(a); a.click();
           document.body.removeChild(a); URL.revokeObjectURL(a.href);
