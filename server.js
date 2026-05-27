@@ -16,7 +16,11 @@ cloudinary.config({
 });
 
 // --- Middleware ---
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept'],
+}));
 app.use(express.json());
 
 // --- Health check ---
