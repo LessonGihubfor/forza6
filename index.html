@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#111111" />
+    <title>Forza Gallery</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+
+    <style>
+      :root {
+        --card-radius: 14px;
+      }
+      html,
+      body {
+        background-color: #0c0c0c;
+      }
+      body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: linear-gradient(180deg, #0c0c0c 80%, rgba(12, 12, 12, 0));
+        padding: 14px 0 10px;
+      }
+      .app-title {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .photo-card {
+        background-color: #1a1a1a;
+        border: 1px solid #262626;
+        border-radius: var(--card-radius);
+        overflow: hidden;
+      }
+      .photo-thumb {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        display: block;
+        background-color: #000;
+      }
+      @media (min-width: 576px) {
+        .photo-thumb {
+          height: 240px;
+        }
+      }
+      .photo-actions {
+        padding: 8px;
+      }
+      .btn-save {
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+      .empty-state,
+      .error-state,
+      .loading-state {
+        min-height: 60vh;
+      }
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          #1a1a1a 0%,
+          #242424 50%,
+          #1a1a1a 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.4s infinite;
+        border-radius: var(--card-radius);
+        height: 180px;
+      }
+      @keyframes shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+      .hint {
+        font-size: 0.8rem;
+        color: #9a9a9a;
+      }
+    </style>
+  </head>
+  <body class="bg-dark text-light">
+    <div class="container-fluid px-3" style="max-width: 720px">
+      <header class="app-header text-center">
+        <h1 class="app-title h4 mb-1">Forza Gallery</h1>
+        <p class="hint mb-0">
+          Tap <strong>Open Full Size</strong>, then long-press the image &rarr;
+          <em>Save to Photos</em>.
+        </p>
+      </header>
+
+      <main id="app" class="pb-4">
+        <!-- Initial loading skeletons -->
+        <div id="loading" class="row g-2">
+          <div class="col-6"><div class="skeleton"></div></div>
+          <div class="col-6"><div class="skeleton"></div></div>
+          <div class="col-6"><div class="skeleton"></div></div>
+          <div class="col-6"><div class="skeleton"></div></div>
+          <div class="col-6"><div class="skeleton"></div></div>
+          <div class="col-6"><div class="skeleton"></div></div>
+        </div>
+
+        <div
+          id="error"
+          class="error-state d-none align-items-center justify-content-center text-center"
+        >
+          <div>
+            <div class="display-6 mb-2">&#9888;&#65039;</div>
+            <h2 class="h5">Could not load photos</h2>
+            <p id="error-message" class="text-secondary small mb-3">
+              Something went wrong.
+            </p>
+            <button id="retry-btn" class="btn btn-outline-light btn-sm">
+              Try again
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="empty"
+          class="empty-state d-none align-items-center justify-content-center text-center"
+        >
+          <div>
+            <div class="display-6 mb-2">&#128248;</div>
+            <h2 class="h5">No photos yet</h2>
+            <p class="text-secondary small mb-0">
+              Upload screenshots to the <code>forza_gallery</code> folder in
+              Cloudinary.
+            </p>
+          </div>
+        </div>
+
+        <div id="grid" class="row g-2 d-none"></div>
+      </main>
+
+      <footer class="text-center py-3 hint">
+        <span id="count"></span>
+      </footer>
+    </div>
+
+    <script>
+      // === CONFIG ===
+      // Replace this with your deployed Render backend URL (no trailing slash).
+      // Example: "https://forza-gallery-api.onrender.com"
+      const API_BASE_URL = "http://localhost:3000";
+
+      const els = {
+        loading: document.getElementById("loading"),
+        error: document.getElementById("error"),
+        errorMessage: document.getElementById("error-message"),
+        empty: document.getElementById("empty"),
+        grid: document.getElementById("grid"),
+        count: document.getElementById("count"),
+        retry: document.getElementById("retry-btn"),
+      };
+
+      function show(el) {
+        el.classList.remove("d-none");
+        el.classList.add("d-flex");
+        if (el === els.grid) {
+          el.classList.remove("d-flex");
+          el.classList.add("d-flex");
+        }
+      }
+      function hide(el) {
+        el.classList.add("d-none");
+        el.classList.remove("d-flex");
+      }
+
+      function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, (c) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        }[c]));
+      }
+
+      function renderPhotos(photos) {
+        els.grid.innerHTML = photos
+          .map((p) => {
+            const thumb = escapeHtml(p.thumbnail || p.url);
+            const full = escapeHtml(p.url);
+            const id = escapeHtml(p.id || "");
+            return `
+              <div class="col-6">
+                <div class="photo-card h-100 d-flex flex-column">
+                  <a href="${full}" target="_blank" rel="noopener noreferrer">
+                    <img
+                      class="photo-thumb"
+                      src="${thumb}"
+                      alt="${id}"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </a>
+                  <div class="photo-actions mt-auto">
+                    <a
+                      class="btn btn-light btn-sm w-100 btn-save"
+                      href="${full}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open Full Size
+                    </a>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadPhotos() {
+        hide(els.error);
+        hide(els.empty);
+        hide(els.grid);
+        els.loading.classList.remove("d-none");
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/photos`, {
+            headers: { Accept: "application/json" },
+          });
+
+          if (!res.ok) {
+            let detail = `HTTP ${res.status}`;
+            try {
+              const j = await res.json();
+              if (j && j.error) detail = j.error;
+            } catch (_) {}
+            throw new Error(detail);
+          }
+
+          const data = await res.json();
+          const photos = (data && data.photos) || [];
+
+          els.loading.classList.add("d-none");
+
+          if (photos.length === 0) {
+            show(els.empty);
+            els.count.textContent = "";
+            return;
+          }
+
+          renderPhotos(photos);
+          els.grid.classList.remove("d-none");
+          els.count.textContent = `${photos.length} photo${
+            photos.length === 1 ? "" : "s"
+          }`;
+        } catch (err) {
+          els.loading.classList.add("d-none");
+          els.errorMessage.textContent =
+            (err && err.message) || "Unknown error";
+          show(els.error);
+        }
+      }
+
+      els.retry.addEventListener("click", loadPhotos);
+      loadPhotos();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "forza-gallery",
+  "version": "1.0.0",
+  "description": "Forza Motorsport 6 PC screenshot gallery synced via Cloudinary",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1"
+  }
+}
