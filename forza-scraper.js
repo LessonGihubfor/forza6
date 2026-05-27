@@ -20,51 +20,52 @@
   console.log("Scanning for Forza photos on this page...\n");
 
   // --- Step 1: Collect ONLY actual Forza gallery photo URLs ---
-  // The real photos live on t10pgalleryv2.azureedge.net or xboxlive.com
-  const seen = new Set();
+  // Forza serves each photo in 2 sizes (URL ending /4 = full-res, /2 = thumbnail).
+  // We only want the /4 (full-res) version, and we dedupe by the photo UUID.
+  const seenUUID = new Set();
   const photoUrls = [];
 
-  // Method A: Find gallery images by domain
-  document.querySelectorAll("img").forEach((img) => {
-    const src = img.src || "";
-    if (
-      (src.includes("t10pgalleryv2.azureedge.net") ||
-       src.includes("ugcorigin") ||
-       src.includes("gameclipscontent") ||
-       src.includes("xboxlive.com/image")) &&
-      !seen.has(src)
-    ) {
-      seen.add(src);
-      photoUrls.push(src);
-    }
-  });
+  function addUrl(src) {
+    if (!src) return;
+    // Only gallery images from t10pgalleryv2 or xboxlive
+    const isGallery = src.includes("t10pgalleryv2.azureedge.net") ||
+                      src.includes("ugcorigin") ||
+                      src.includes("gameclipscontent") ||
+                      src.includes("xboxlive.com/image");
+    if (!isGallery) return;
 
-  // Method B: Check background-image styles
+    // Extract the photo UUID from the URL to deduplicate
+    // URL pattern: .../galleryv2images/{userID}/{photoUUID}/{size}
+    const parts = src.split("/");
+    const sizeIdx = parts.length - 1;
+    const uuidIdx = parts.length - 2;
+    const uuid = parts[uuidIdx] || src;
+
+    if (seenUUID.has(uuid)) return;
+    seenUUID.add(uuid);
+
+    // Prefer full-res: replace /2 (thumb) with /4 (full) at end of URL
+    let fullResUrl = src;
+    if (parts[sizeIdx] === "2") {
+      parts[sizeIdx] = "4";
+      fullResUrl = parts.join("/");
+    }
+
+    photoUrls.push(fullResUrl);
+  }
+
+  // Scan all img tags
+  document.querySelectorAll("img").forEach((img) => addUrl(img.src));
+
+  // Scan background-image styles
   document.querySelectorAll("[style*='background-image']").forEach((el) => {
     const match = el.style.backgroundImage.match(/url\(["']?(.+?)["']?\)/);
-    if (match && match[1]) {
-      const src = match[1];
-      if (
-        (src.includes("t10pgalleryv2.azureedge.net") ||
-         src.includes("xboxlive.com/image")) &&
-        !seen.has(src)
-      ) {
-        seen.add(src);
-        photoUrls.push(src);
-      }
-    }
+    if (match) addUrl(match[1]);
   });
 
-  // Method C: Look for data attributes that might hold image URLs
+  // Scan data attributes
   document.querySelectorAll("[data-src], [data-image], [data-photo]").forEach((el) => {
-    const src = el.dataset.src || el.dataset.image || el.dataset.photo || "";
-    if (
-      (src.includes("t10pgalleryv2") || src.includes("xboxlive.com")) &&
-      !seen.has(src)
-    ) {
-      seen.add(src);
-      photoUrls.push(src);
-    }
+    addUrl(el.dataset.src || el.dataset.image || el.dataset.photo);
   });
 
   if (photoUrls.length === 0) {
