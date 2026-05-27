@@ -3,649 +3,240 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#09090b" />
+    <meta name="theme-color" content="#0a0a0a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Forza Gallery</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
-      :root {
-        --bg-primary: #09090b;
-        --bg-card: #18181b;
-        --bg-card-hover: #1f1f23;
-        --border-color: #27272a;
-        --accent: #3b82f6;
-        --accent-hover: #2563eb;
-        --accent-glow: rgba(59, 130, 246, 0.25);
-        --text-primary: #fafafa;
-        --text-secondary: #a1a1aa;
-        --text-muted: #71717a;
-        --radius: 16px;
-        --radius-sm: 12px;
+      *{box-sizing:border-box;margin:0;padding:0}
+      :root{
+        --bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--border:#252525;
+        --blue:#3b82f6;--blue-h:#2563eb;--green:#22c55e;--green-h:#16a34a;
+        --t1:#f5f5f5;--t2:#a0a0a0;--t3:#666;
+        --r:14px;--rs:10px;
       }
+      html,body{background:var(--bg);color:var(--t1);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased}
+      body{padding-top:env(safe-area-inset-top);padding-bottom:calc(env(safe-area-inset-bottom)+20px)}
+      a{color:inherit;text-decoration:none}
 
-      * { box-sizing: border-box; }
+      /* ---- HEADER ---- */
+      .hdr{position:sticky;top:0;z-index:50;backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);background:rgba(10,10,10,.78);border-bottom:1px solid var(--border)}
+      .hdr-inner{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+      .hdr-left{display:flex;align-items:center;gap:10px}
+      .hdr-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),#8b5cf6);border-radius:9px;display:flex;align-items:center;justify-content:center}
+      .hdr-title{font-size:1.15rem;font-weight:800;letter-spacing:-.03em}
+      .hdr-badge{background:var(--blue);color:#fff;font-size:.65rem;font-weight:800;padding:3px 9px;border-radius:99px}
+      .hdr-sub{font-size:.7rem;color:var(--t3);margin-left:42px;margin-top:-2px;padding-bottom:2px}
+      @media(max-width:600px){.hdr-sub{display:none}}
 
-      html, body {
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        margin: 0;
-      }
+      /* ---- GRID ---- */
+      .wrap{max-width:1200px;margin:0 auto;padding:16px 16px 0}
+      .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+      @media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr);gap:16px}}
+      @media(min-width:1000px){.grid{grid-template-columns:repeat(4,1fr);gap:18px}}
 
-      body {
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
-      }
+      /* ---- CARD ---- */
+      .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;display:flex;flex-direction:column}
+      .card:hover{transform:translateY(-3px);border-color:rgba(59,130,246,.4);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+      .card-img-wrap{position:relative;overflow:hidden;cursor:pointer;aspect-ratio:16/9;background:#000}
+      .card-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+      .card:hover .card-img{transform:scale(1.05)}
+      .card-overlay{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.6));opacity:0;transition:opacity .25s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px}
+      .card:hover .card-overlay{opacity:1}
+      .card-hint{font-size:.65rem;font-weight:600;color:rgba(255,255,255,.85);background:rgba(0,0,0,.45);padding:4px 10px;border-radius:99px;backdrop-filter:blur(4px)}
+      .card-bar{display:flex;gap:1px;overflow:hidden;border-top:1px solid var(--border)}
+      .card-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 0;font-size:.68rem;font-weight:700;color:#fff;border:none;cursor:pointer;transition:background .12s}
+      .card-btn svg{width:12px;height:12px;flex-shrink:0}
+      .btn-sv{background:var(--surface2)}
+      .btn-sv:hover{background:var(--green)}
+      .btn-sv.saving{background:var(--t3);pointer-events:none}
+      .btn-fs{background:var(--surface2)}
+      .btn-fs:hover{background:var(--blue)}
 
-      .app-wrap {
-        max-width: 680px;
-        margin: 0 auto;
-        padding: 0 12px;
-      }
+      /* ---- LIGHTBOX ---- */
+      .lb{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);flex-direction:column;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s}
+      .lb.open{display:flex}
+      .lb-img{max-width:92%;max-height:72vh;border-radius:var(--r);box-shadow:0 24px 80px rgba(0,0,0,.7);object-fit:contain}
+      .lb-bar{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+      .lb-btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;font-size:.8rem;font-weight:700;border:none;border-radius:var(--rs);cursor:pointer;transition:all .15s;text-decoration:none;color:#fff}
+      .lb-btn svg{width:15px;height:15px}
+      .lb-save{background:var(--green)}.lb-save:hover{background:var(--green-h)}
+      .lb-open{background:var(--blue)}.lb-open:hover{background:var(--blue-h)}
+      .lb-close-btn{background:rgba(255,255,255,.08)}.lb-close-btn:hover{background:rgba(255,255,255,.15)}
+      .lb-x{position:absolute;top:14px;right:14px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:18px;cursor:pointer;transition:background .15s}
+      .lb-x:hover{background:rgba(255,255,255,.18)}
 
-      /* ---------- HEADER ---------- */
-      .app-header {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        background: rgba(9, 9, 11, 0.82);
-        border-bottom: 1px solid var(--border-color);
-        padding: 16px 0 14px;
-        text-align: center;
-      }
-      .logo-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 4px;
-      }
-      .logo-icon {
-        width: 28px;
-        height: 28px;
-        background: linear-gradient(135deg, var(--accent), #8b5cf6);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-      }
-      .app-title {
-        font-size: 1.25rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-      .app-subtitle {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin: 0;
-      }
-      .badge-count {
-        display: inline-block;
-        background: var(--accent);
-        color: #fff;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 99px;
-        margin-left: 4px;
-        vertical-align: middle;
-      }
+      /* ---- STATES ---- */
+      .state{min-height:50vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px 20px}
+      .state-ico{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px}
+      .state-ico-err{background:rgba(239,68,68,.12)}
+      .state-ico-mt{background:rgba(160,160,160,.08)}
+      .state-h{font-size:1rem;font-weight:700;margin-bottom:4px}
+      .state-p{font-size:.78rem;color:var(--t3);max-width:240px;margin:0 auto;line-height:1.5}
+      .btn-retry{margin-top:14px;padding:9px 24px;font-size:.78rem;font-weight:700;border:1px solid var(--border);background:transparent;color:var(--t1);border-radius:var(--rs);cursor:pointer;transition:all .15s}
+      .btn-retry:hover{background:rgba(255,255,255,.05);border-color:var(--t3)}
 
-      /* ---------- GRID ---------- */
-      .photo-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        padding: 16px 0;
-      }
-      @media (min-width: 540px) {
-        .photo-grid { gap: 14px; }
-      }
+      /* ---- SKELETON ---- */
+      .skel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+      .skel-img{aspect-ratio:16/9;background:linear-gradient(90deg,#141414 0%,#1e1e1e 50%,#141414 100%);background-size:200% 100%;animation:shm 1.5s ease infinite}
+      .skel-bar{height:34px;border-top:1px solid var(--border);background:linear-gradient(90deg,#141414 0%,#1e1e1e 50%,#141414 100%);background-size:200% 100%;animation:shm 1.5s ease infinite;animation-delay:.15s}
+      @keyframes shm{0%{background-position:200% 0}100%{background-position:-200% 0}}
+      @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+      @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+      .card{animation:slideUp .35s ease both}
 
-      /* ---------- CARDS ---------- */
-      .photo-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius);
-        overflow: hidden;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        display: flex;
-        flex-direction: column;
-      }
-      .photo-card:hover {
-        transform: translateY(-2px);
-        border-color: var(--accent);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 1px var(--accent-glow);
-      }
-      .photo-link {
-        display: block;
-        position: relative;
-        overflow: hidden;
-        cursor: pointer;
-      }
-      .photo-thumb {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-        display: block;
-        background: #000;
-        transition: transform 0.3s ease;
-      }
-      .photo-card:hover .photo-thumb {
-        transform: scale(1.04);
-      }
-      @media (min-width: 540px) {
-        .photo-thumb { height: 260px; }
-      }
-      .photo-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.7) 100%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding-bottom: 12px;
-      }
-      .photo-card:hover .photo-overlay {
-        opacity: 1;
-      }
-      .overlay-hint {
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: rgba(255,255,255,0.9);
-        background: rgba(0,0,0,0.5);
-        padding: 4px 10px;
-        border-radius: 99px;
-        backdrop-filter: blur(4px);
-      }
-      .photo-actions {
-        padding: 8px;
-        display: flex;
-        gap: 6px;
-      }
-      .btn-download, .btn-save-photo {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        padding: 10px 0;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.01em;
-        color: #fff;
-        border: none;
-        border-radius: var(--radius-sm);
-        text-decoration: none;
-        cursor: pointer;
-        transition: background 0.15s ease, box-shadow 0.15s ease;
-      }
-      .btn-save-photo {
-        background: #22c55e;
-      }
-      .btn-save-photo:hover {
-        background: #16a34a;
-        box-shadow: 0 0 20px rgba(34,197,94,0.3);
-        color: #fff;
-      }
-      .btn-save-photo.saving {
-        background: #71717a;
-        pointer-events: none;
-      }
-      .btn-download {
-        background: var(--accent);
-      }
-      .btn-download:hover {
-        background: var(--accent-hover);
-        box-shadow: 0 0 20px var(--accent-glow);
-        color: #fff;
-      }
-      .btn-download svg, .btn-save-photo svg {
-        width: 13px;
-        height: 13px;
-        flex-shrink: 0;
-      }
-
-      /* ---------- LIGHTBOX ---------- */
-      .lightbox {
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 999;
-        background: rgba(0,0,0,0.92);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        padding: 20px;
-        animation: fadeIn 0.2s ease;
-      }
-      .lightbox.open { display: flex; }
-      .lightbox-img {
-        max-width: 100%;
-        max-height: 75vh;
-        border-radius: var(--radius);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-        object-fit: contain;
-      }
-      .lightbox-actions {
-        margin-top: 16px;
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .lightbox-btn-save {
-        background: #22c55e;
-        color: #fff;
-      }
-      .lightbox-btn-save:hover {
-        background: #16a34a;
-        color: #fff;
-      }
-      .lightbox-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 12px 24px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        border: none;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        text-decoration: none;
-        transition: all 0.15s ease;
-      }
-      .lightbox-btn-primary {
-        background: var(--accent);
-        color: #fff;
-      }
-      .lightbox-btn-primary:hover {
-        background: var(--accent-hover);
-        color: #fff;
-      }
-      .lightbox-btn-ghost {
-        background: rgba(255,255,255,0.1);
-        color: #fff;
-      }
-      .lightbox-btn-ghost:hover { background: rgba(255,255,255,0.2); }
-      .lightbox-close {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.1);
-        border: none;
-        color: #fff;
-        font-size: 20px;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-      .lightbox-close:hover { background: rgba(255,255,255,0.2); }
-
-      /* ---------- STATES ---------- */
-      .state-box {
-        min-height: 55vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-      }
-      .state-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        margin: 0 auto 16px;
-      }
-      .state-icon-loading {
-        background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15));
-      }
-      .state-icon-error {
-        background: rgba(239,68,68,0.15);
-      }
-      .state-icon-empty {
-        background: rgba(161,161,170,0.1);
-      }
-      .state-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-bottom: 6px;
-      }
-      .state-desc {
-        font-size: 0.82rem;
-        color: var(--text-muted);
-        max-width: 260px;
-        margin: 0 auto;
-        line-height: 1.5;
-      }
-      .btn-retry {
-        margin-top: 16px;
-        padding: 10px 28px;
-        font-size: 0.82rem;
-        font-weight: 700;
-        border: 1px solid var(--border-color);
-        background: transparent;
-        color: var(--text-primary);
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        transition: all 0.15s;
-      }
-      .btn-retry:hover {
-        background: rgba(255,255,255,0.05);
-        border-color: var(--text-muted);
-      }
-
-      /* ---------- SKELETON ---------- */
-      .skeleton-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius);
-        overflow: hidden;
-      }
-      .skeleton-img {
-        height: 200px;
-        background: linear-gradient(90deg, #1a1a1e 0%, #27272a 50%, #1a1a1e 100%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s ease infinite;
-      }
-      .skeleton-btn {
-        margin: 10px;
-        height: 40px;
-        border-radius: var(--radius-sm);
-        background: linear-gradient(90deg, #1a1a1e 0%, #27272a 50%, #1a1a1e 100%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s ease infinite;
-        animation-delay: 0.1s;
-      }
-      @keyframes shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .photo-card {
-        animation: slideUp 0.4s ease both;
-      }
-      .photo-grid .photo-card:nth-child(1) { animation-delay: 0.02s; }
-      .photo-grid .photo-card:nth-child(2) { animation-delay: 0.06s; }
-      .photo-grid .photo-card:nth-child(3) { animation-delay: 0.10s; }
-      .photo-grid .photo-card:nth-child(4) { animation-delay: 0.14s; }
-      .photo-grid .photo-card:nth-child(5) { animation-delay: 0.18s; }
-      .photo-grid .photo-card:nth-child(6) { animation-delay: 0.22s; }
-      .photo-grid .photo-card:nth-child(7) { animation-delay: 0.26s; }
-      .photo-grid .photo-card:nth-child(8) { animation-delay: 0.30s; }
-
-      /* ---------- FOOTER ---------- */
-      .app-footer {
-        text-align: center;
-        padding: 12px 0 24px;
-        font-size: 0.72rem;
-        color: var(--text-muted);
-      }
-
-      .d-none { display: none !important; }
+      /* ---- FOOTER ---- */
+      .ft{text-align:center;padding:20px 0 28px;font-size:.68rem;color:var(--t3)}
+      .d-none{display:none!important}
     </style>
   </head>
   <body>
-    <div class="app-wrap">
-      <header class="app-header">
-        <div class="logo-row">
-          <div class="logo-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+    <header class="hdr">
+      <div class="hdr-inner">
+        <div class="hdr-left">
+          <div class="hdr-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
           </div>
-          <h1 class="app-title">Forza Gallery</h1>
-          <span id="badge" class="badge-count d-none"></span>
+          <span class="hdr-title">Forza Gallery</span>
         </div>
-        <p class="app-subtitle">Tap a photo to preview. Open full size to save to your camera roll.</p>
-      </header>
+        <span id="badge" class="hdr-badge d-none"></span>
+      </div>
+      <div class="hdr-inner" style="padding-top:0;padding-bottom:10px">
+        <span class="hdr-sub">Tap a photo to preview &middot; Save directly to your camera roll</span>
+      </div>
+    </header>
 
+    <div class="wrap">
       <main id="app">
-        <!-- Loading -->
-        <div id="loading" class="photo-grid">
-          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-btn"></div></div>
-          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-btn"></div></div>
-          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-btn"></div></div>
-          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-btn"></div></div>
+        <div id="loading" class="grid">
+          <div class="skel"><div class="skel-img"></div><div class="skel-bar"></div></div>
+          <div class="skel"><div class="skel-img"></div><div class="skel-bar"></div></div>
+          <div class="skel"><div class="skel-img"></div><div class="skel-bar"></div></div>
+          <div class="skel"><div class="skel-img"></div><div class="skel-bar"></div></div>
+          <div class="skel"><div class="skel-img"></div><div class="skel-bar"></div></div>
+          <div class="skel"><div class="skel-img"></div><div class="skel-bar"></div></div>
         </div>
 
-        <!-- Error -->
-        <div id="error" class="state-box d-none">
+        <div id="error" class="state d-none">
           <div>
-            <div class="state-icon state-icon-error">&#9888;&#65039;</div>
-            <div class="state-title">Could not load photos</div>
-            <p id="error-message" class="state-desc">Something went wrong.</p>
+            <div class="state-ico state-ico-err">&#9888;&#65039;</div>
+            <div class="state-h">Could not load photos</div>
+            <p id="error-message" class="state-p">Something went wrong.</p>
             <button id="retry-btn" class="btn-retry">Try again</button>
           </div>
         </div>
 
-        <!-- Empty -->
-        <div id="empty" class="state-box d-none">
+        <div id="empty" class="state d-none">
           <div>
-            <div class="state-icon state-icon-empty">&#128248;</div>
-            <div class="state-title">No photos yet</div>
-            <p class="state-desc">Save screenshots from forza.net to your ForzaShots folder, and run the uploader.</p>
+            <div class="state-ico state-ico-mt">&#128248;</div>
+            <div class="state-h">No photos yet</div>
+            <p class="state-p">Sync your screenshots from forza.net using the console script.</p>
           </div>
         </div>
 
-        <!-- Grid -->
-        <div id="grid" class="photo-grid d-none"></div>
+        <div id="grid" class="grid d-none"></div>
       </main>
-
-      <footer class="app-footer">
-        <span id="count"></span>
-      </footer>
+      <footer class="ft"><span id="count"></span></footer>
     </div>
 
-    <!-- Lightbox -->
-    <div id="lightbox" class="lightbox">
-      <button id="lightbox-close" class="lightbox-close" aria-label="Close">&times;</button>
-      <img id="lightbox-img" class="lightbox-img" src="" alt="Preview" />
-      <div class="lightbox-actions">
-        <button id="lightbox-save" class="lightbox-btn lightbox-btn-save">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <div id="lightbox" class="lb">
+      <button id="lb-x" class="lb-x" aria-label="Close">&times;</button>
+      <img id="lb-img" class="lb-img" src="" alt="Preview" />
+      <div class="lb-bar">
+        <button id="lb-save" class="lb-btn lb-save">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Save to Photos
         </button>
-        <a id="lightbox-open" class="lightbox-btn lightbox-btn-primary" href="#" target="_blank" rel="noopener noreferrer">
-          Open Full Size
-        </a>
-        <button id="lightbox-close2" class="lightbox-btn lightbox-btn-ghost">Close</button>
+        <a id="lb-open" class="lb-btn lb-open" href="#" target="_blank" rel="noopener noreferrer">Open Full Size</a>
+        <button id="lb-close2" class="lb-btn lb-close-btn">Close</button>
       </div>
     </div>
 
     <script>
       const API_BASE_URL = "https://forza-gallery-api.onrender.com";
-
-      const $ = (id) => document.getElementById(id);
+      const $ = id => document.getElementById(id);
       const els = {
-        loading: $("loading"),
-        error: $("error"),
-        errorMsg: $("error-message"),
-        empty: $("empty"),
-        grid: $("grid"),
-        count: $("count"),
-        badge: $("badge"),
-        retry: $("retry-btn"),
-        lightbox: $("lightbox"),
-        lbImg: $("lightbox-img"),
-        lbOpen: $("lightbox-open"),
-        lbSave: $("lightbox-save"),
-        lbClose: $("lightbox-close"),
-        lbClose2: $("lightbox-close2"),
+        loading:$("loading"), error:$("error"), errorMsg:$("error-message"),
+        empty:$("empty"), grid:$("grid"), count:$("count"), badge:$("badge"),
+        retry:$("retry-btn"), lb:$("lightbox"), lbImg:$("lb-img"),
+        lbOpen:$("lb-open"), lbSave:$("lb-save"), lbX:$("lb-x"), lbClose2:$("lb-close2"),
       };
+      let currentFull = "";
+      const show = el => el.classList.remove("d-none");
+      const hide = el => el.classList.add("d-none");
+      const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-      let currentFullUrl = "";
-
-      function show(el) { el.classList.remove("d-none"); }
-      function hide(el) { el.classList.add("d-none"); }
-
-      function esc(str) {
-        return String(str).replace(/[&<>"']/g, (c) =>
-          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
-        );
-      }
-
-      // --- Save to Photos (iOS + Android + Desktop) ---
-      async function savePhoto(url, button) {
-        const origText = button ? button.innerHTML : '';
-        if (button) { button.innerHTML = 'Saving...'; button.classList.add('saving'); }
-
+      async function savePhoto(url, btn) {
+        const orig = btn ? btn.innerHTML : "";
+        if (btn) { btn.innerHTML = "Saving…"; btn.classList.add("saving"); }
         try {
-          const res = await fetch(url);
-          const blob = await res.blob();
-          const file = new File([blob], 'forza-photo.jpg', { type: blob.type });
-
-          // Try Web Share API (works on iOS Safari 15+, shows native share sheet)
+          const r = await fetch(url); const blob = await r.blob();
+          const file = new File([blob], "forza-photo.jpg", { type: blob.type });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Forza Screenshot' });
-            if (button) { button.innerHTML = 'Saved!'; setTimeout(() => { button.innerHTML = origText; button.classList.remove('saving'); }, 2000); }
+            await navigator.share({ files: [file], title: "Forza Screenshot" });
+            if (btn) { btn.innerHTML = "Saved!"; setTimeout(() => { btn.innerHTML = orig; btn.classList.remove("saving"); }, 2000); }
             return;
           }
-
-          // Fallback: trigger a download
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = 'forza-photo.jpg';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(a.href);
-          if (button) { button.innerHTML = 'Saved!'; setTimeout(() => { button.innerHTML = origText; button.classList.remove('saving'); }, 2000); }
-        } catch (err) {
-          // Final fallback: open in new tab for manual long-press save
-          window.open(url, '_blank');
-          if (button) { button.innerHTML = origText; button.classList.remove('saving'); }
+          const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+          a.download = "forza-photo.jpg"; document.body.appendChild(a); a.click();
+          document.body.removeChild(a); URL.revokeObjectURL(a.href);
+          if (btn) { btn.innerHTML = "Saved!"; setTimeout(() => { btn.innerHTML = orig; btn.classList.remove("saving"); }, 2000); }
+        } catch (e) {
+          window.open(url, "_blank");
+          if (btn) { btn.innerHTML = orig; btn.classList.remove("saving"); }
         }
       }
 
-      // --- Lightbox ---
-      function openLightbox(thumbUrl, fullUrl) {
-        els.lbImg.src = thumbUrl;
-        els.lbOpen.href = fullUrl;
-        currentFullUrl = fullUrl;
-        els.lightbox.classList.add("open");
-        document.body.style.overflow = "hidden";
+      function openLb(thumb, full) {
+        els.lbImg.src = thumb; els.lbOpen.href = full; currentFull = full;
+        els.lb.classList.add("open"); document.body.style.overflow = "hidden";
       }
-      function closeLightbox() {
-        els.lightbox.classList.remove("open");
-        document.body.style.overflow = "";
-        els.lbImg.src = "";
-      }
-      els.lbClose.addEventListener("click", closeLightbox);
-      els.lbClose2.addEventListener("click", closeLightbox);
-      els.lbSave.addEventListener("click", () => savePhoto(currentFullUrl, els.lbSave));
-      els.lightbox.addEventListener("click", (e) => {
-        if (e.target === els.lightbox) closeLightbox();
-      });
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeLightbox();
-      });
+      function closeLb() { els.lb.classList.remove("open"); document.body.style.overflow = ""; els.lbImg.src = ""; }
+      els.lbX.addEventListener("click", closeLb);
+      els.lbClose2.addEventListener("click", closeLb);
+      els.lbSave.addEventListener("click", () => savePhoto(currentFull, els.lbSave));
+      els.lb.addEventListener("click", e => { if (e.target === els.lb) closeLb(); });
+      document.addEventListener("keydown", e => { if (e.key === "Escape") closeLb(); });
 
-      // --- Render ---
       function renderPhotos(photos) {
-        els.grid.innerHTML = photos
-          .map((p) => {
-            const thumb = esc(p.thumbnail || p.url);
-            const full = esc(p.url);
-            return `
-              <div class="photo-card">
-                <div class="photo-link" data-thumb="${thumb}" data-full="${full}">
-                  <img class="photo-thumb" src="${thumb}" alt="Forza screenshot" loading="lazy" decoding="async" />
-                  <div class="photo-overlay"><span class="overlay-hint">Tap to preview</span></div>
-                </div>
-                <div class="photo-actions">
-                  <button class="btn-save-photo" data-url="${full}" onclick="savePhoto('${full}', this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Save
-                  </button>
-                  <a class="btn-download" href="${full}" target="_blank" rel="noopener noreferrer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                    Full Size
-                  </a>
-                </div>
-              </div>`;
-          })
-          .join("");
-
-        // Attach lightbox click handlers
-        els.grid.querySelectorAll(".photo-link").forEach((el) => {
-          el.addEventListener("click", () => {
-            openLightbox(el.dataset.thumb, el.dataset.full);
-          });
+        els.grid.innerHTML = photos.map((p, i) => {
+          const thumb = esc(p.thumbnail || p.url), full = esc(p.url);
+          return `<div class="card" style="animation-delay:${Math.min(i * .04, .4).toFixed(2)}s">
+            <div class="card-img-wrap" data-thumb="${thumb}" data-full="${full}">
+              <img class="card-img" src="${thumb}" alt="Forza screenshot" loading="lazy" decoding="async"/>
+              <div class="card-overlay"><span class="card-hint">Tap to preview</span></div>
+            </div>
+            <div class="card-bar">
+              <button class="card-btn btn-sv" onclick="savePhoto('${full}',this)">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Save
+              </button>
+              <a class="card-btn btn-fs" href="${full}" target="_blank" rel="noopener noreferrer">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                Full Size
+              </a>
+            </div>
+          </div>`;
+        }).join("");
+        els.grid.querySelectorAll(".card-img-wrap").forEach(el => {
+          el.addEventListener("click", () => openLb(el.dataset.thumb, el.dataset.full));
         });
       }
 
-      // --- Load ---
       async function loadPhotos() {
-        hide(els.error);
-        hide(els.empty);
-        hide(els.grid);
-        hide(els.badge);
-        show(els.loading);
-
+        hide(els.error); hide(els.empty); hide(els.grid); hide(els.badge); show(els.loading);
         try {
-          const res = await fetch(`${API_BASE_URL}/api/photos`, {
-            headers: { Accept: "application/json" },
-          });
-
-          if (!res.ok) {
-            let detail = `HTTP ${res.status}`;
-            try { const j = await res.json(); if (j && j.error) detail = j.error; } catch (_) {}
-            throw new Error(detail);
-          }
-
-          const data = await res.json();
-          const photos = (data && data.photos) || [];
-
+          const res = await fetch(`${API_BASE_URL}/api/photos`, { headers: { Accept: "application/json" } });
+          if (!res.ok) { let d=`HTTP ${res.status}`; try{const j=await res.json();if(j.error)d=j.error}catch(_){} throw new Error(d); }
+          const data = await res.json(); const photos = (data && data.photos) || [];
           hide(els.loading);
-
-          if (photos.length === 0) {
-            show(els.empty);
-            els.count.textContent = "";
-            return;
-          }
-
-          renderPhotos(photos);
-          show(els.grid);
-          els.badge.textContent = photos.length;
-          show(els.badge);
-          els.count.textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"} from Forza Motorsport 6`;
-        } catch (err) {
-          hide(els.loading);
-          els.errorMsg.textContent = (err && err.message) || "Unknown error";
-          show(els.error);
-        }
+          if (!photos.length) { show(els.empty); els.count.textContent = ""; return; }
+          renderPhotos(photos); show(els.grid);
+          els.badge.textContent = photos.length; show(els.badge);
+          els.count.textContent = `${photos.length} photo${photos.length===1?"":"s"} from Forza Motorsport 6`;
+        } catch (err) { hide(els.loading); els.errorMsg.textContent = err?.message || "Unknown error"; show(els.error); }
       }
-
       els.retry.addEventListener("click", loadPhotos);
       loadPhotos();
     </script>
